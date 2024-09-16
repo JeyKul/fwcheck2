@@ -24,6 +24,13 @@ csc_files["KOO"]="koo.txt"
 csc_files["SKC"]="koo.txt"
 csc_files["KTC"]="koo.txt"
 csc_files["LUC"]="koo.txt"
+csc_files["TMK"]="tmk.txt"
+csc_files["TMB"]="tmk.txt"
+csc_files["DSH"]="tmk.txt"
+csc_files["DSA"]="tmk.txt"
+csc_files["ATT"]="tmk.txt"
+csc_files["VZW"]="tmk.txt"
+csc_files["SPR"]="tmk.txt"
 
 # Function to process each model
 process_model() {

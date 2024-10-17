@@ -31,6 +31,7 @@ csc_files["DSA"]="tmk.txt"
 csc_files["ATT"]="tmk.txt"
 csc_files["VZW"]="tmk.txt"
 csc_files["SPR"]="tmk.txt"
+csc_files["XID"]="xid.txt"
 
 # Function to process each model
 process_model() {

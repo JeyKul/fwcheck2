@@ -36,7 +36,7 @@ csc_files["ATT"]="tmk.txt"
 csc_files["VZW"]="tmk.txt"
 csc_files["SPR"]="tmk.txt"
 csc_files["XID"]="xid.txt"
-
+csc_files["TUR"]="eux.txt"
 # Function to process each model
 process_model() {
     csc=$1

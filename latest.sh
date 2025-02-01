@@ -19,53 +19,56 @@ done
 
 # CSC codes and their corresponding files
 declare -A csc_files
-csc_files["AUT"]="aut.txt"
-csc_files["EUX"]="eux.txt"
-csc_files["DBT"]="dbt.txt"
-csc_files["BTB"]="btb.txt"
-csc_files["VIP"]="vip.txt"
-csc_files["KOO"]="koo.txt"
-csc_files["SKC"]="koo.txt"
-csc_files["KTC"]="koo.txt"
-csc_files["LUC"]="koo.txt"
-csc_files["TMK"]="tmk.txt"
-csc_files["TMB"]="tmk.txt"
-csc_files["DSH"]="tmk.txt"
-csc_files["DSA"]="tmk.txt"
-csc_files["ATT"]="tmk.txt"
-csc_files["VZW"]="tmk.txt"
-csc_files["SPR"]="tmk.txt"
-csc_files["XID"]="xid.txt"
-csc_files["TUR"]="eux.txt"
+csc_files["AUT"]="./csc/eux.txt"
+csc_files["EUX"]="./csc/eux.txt"
+csc_files["DBT"]="./csc/eux.txt"
+csc_files["BTB"]="./csc/eux.txt"
+csc_files["VIP"]="./csc/eux.txt"
+csc_files["KOO"]="./csc/koo.txt"
+csc_files["SKC"]="./csc/koo.txt"
+csc_files["KTC"]="./csc/koo.txt"
+csc_files["LUC"]="./csc/koo.txt"
+csc_files["TMK"]="./csc/tmk.txt"
+csc_files["TMB"]="./csc/tmk.txt"
+csc_files["DSH"]="./csc/tmk.txt"
+csc_files["DSA"]="./csc/tmk.txt"
+csc_files["ATT"]="./csc/tmk.txt"
+csc_files["VZW"]="./csc/tmk.txt"
+csc_files["SPR"]="./csc/tmk.txt"
+csc_files["XID"]="./csc/eux.txt"
+csc_files["TUR"]="./csc/eux.txt"
+
+# Temporary file for processing commands
+cmd_file=$(mktemp)
+
 # Function to process each model
 process_model() {
-    csc=$1
-    model=$2
+    local csc=$1
+    local model=$2
 
     # Fetch latest version via curl
-    latest_version=$(curl --retry 5 --retry-delay 5 -s "http://fota-cloud-dn.ospserver.net/firmware/$csc/$model/version.xml" | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
+    local latest_version=$(curl --retry 5 --retry-delay 5 -s "http://fota-cloud-dn.ospserver.net/firmware/$csc/$model/version.xml" | grep latest | sed 's/^[^>]*>//' | sed 's/<.*//')
 
     # Check if we got a valid response
     if [ -z "$latest_version" ]; then
-        echo "Firmware: $model CSC:$csc not found" | tee -a "$log_file"
+        echo "log:Firmware: $model CSC:$csc not found"
         return
     fi
 
-    # If current version exists, compare with latest
+    # Determine action based on current version
     if [ -f "current.$csc.$model" ]; then
-        current_version=$(cat "current.$csc.$model")
+        local current_version=$(cat "current.$csc.$model")
         if [ "$current_version" != "$latest_version" ]; then
             echo "$latest_version" > "current.$csc.$model"
-            git add "current.$csc.$model"
-            git commit -m "$csc/$model: updated to $latest_version"
-            echo "Firmware: $model CSC:$csc updated to $latest_version" | tee -a "$log_file"
+            echo "add:current.$csc.$model"
+            echo "commit:$csc/$model: updated to $latest_version"
+            echo "log:Firmware: $model CSC:$csc updated to $latest_version"
         fi
     else
-        # Create a new version file if it doesn't exist
         echo "$latest_version" > "current.$csc.$model"
-        git add "current.$csc.$model"
-        git commit -m "$csc/$model: created with $latest_version"
-        echo "Firmware: $model CSC:$csc created with version $latest_version" | tee -a "$log_file"
+        echo "add:current.$csc.$model"
+        echo "commit:$csc/$model: created with $latest_version"
+        echo "log:Firmware: $model CSC:$csc created with version $latest_version"
     fi
 }
 
@@ -74,29 +77,51 @@ export -f process_model
 # Start timer
 start_time=$(date +%s)
 
-# Main loop to process each CSC
-for csc in "${!csc_files[@]}"
-do
+# Generate all CSC-model pairs
+csp_model_list=$(mktemp)
+for csc in "${!csc_files[@]}"; do
     csc_file=${csc_files[$csc]}
-
-    # Skip if CSC file doesn't exist
+    
     if [ ! -f "$csc_file" ]; then
-        echo "$csc_file not found for CSC $csc" | tee -a "$log_file"
+        echo "log:$csc_file not found for CSC $csc" | tee -a "$log_file"
         continue
     fi
 
-    # Remove comments (#) and empty lines, then process each model
-    if [ ! -z "$max_cores" ]; then
-        grep -vE '^#|^$' "$csc_file" | parallel -j "$max_cores" process_model $csc
-    else
-        grep -vE '^#|^$' "$csc_file" | while IFS= read -r model; do
-            process_model $csc "$model"
-        done
-    fi
-done
+    grep -vE '^#|^$' "$csc_file" | while read -r model; do
+        echo "$csc $model"
+    done
+done > "$csp_model_list"
+
+# Process all pairs in parallel
+parallel_args=()
+[ -n "$max_cores" ] && parallel_args+=("-j" "$max_cores")
+
+cat "$csp_model_list" | parallel "${parallel_args[@]}" --colsep ' ' process_model {1} {2} > "$cmd_file"
+
+# Process accumulated commands
+while read -r line; do
+    case $line in
+        add:*)
+            file="${line#add:}"
+            git add "$file"
+            ;;
+        commit:*)
+            message="${line#commit:}"
+            git commit -m "$message"
+            ;;
+        log:*)
+            log_msg="${line#log:}"
+            echo "$log_msg" | tee -a "$log_file"
+            ;;
+    esac
+done < "$cmd_file"
 
 # Push changes once at the end
 git push
+
+
+# Cleanup temporary files
+rm "$cmd_file" "$csp_model_list"
 
 # End timer and calculate duration
 end_time=$(date +%s)

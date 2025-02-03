@@ -12,7 +12,7 @@ BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 GITHUB_REPO = "jeykul/fwcheck2"
 WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')  # Optional for security
-PORT = 51232  # Port for the webhook server
+PORT =  # Port for the webhook server
 
 # Initialize Flask app
 app = Flask(__name__)

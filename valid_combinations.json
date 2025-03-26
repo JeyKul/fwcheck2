@@ -21,7 +21,10 @@
     "SM-A346N": true,
     "SM-A426N": true,
     "SM-A536N": true,
-    "SM-T515N": true
+    "SM-T515N": true,
+    "SM-S938N": true,
+    "SM-S936N": true,
+    "SM-S931N": true
   },
   "AUT": {
     "SM-T225": true,
@@ -218,7 +221,10 @@
     "SM-T865N": true,
     "SM-T875N": true,
     "SM-T975N": true,
-    "SM-T976N": true
+    "SM-T976N": true,
+    "SM-S938N": true,
+    "SM-S936N": true,
+    "SM-S931N": true
   },
   "SPR": {
     "SM-N986U": true,
@@ -285,7 +291,10 @@
     "SM-F936B": true,
     "SM-F946B": true,
     "SM-F956B": true,
-    "SM-N970F": true
+    "SM-N970F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "TUR": {
     "SM-X200": true,
@@ -381,7 +390,10 @@
     "SM-T830": true,
     "SM-T860": true,
     "SM-T870": true,
-    "SM-T970": true
+    "SM-T970": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "SKC": {
     "SM-S901N": true,
@@ -405,7 +417,10 @@
     "SM-A346N": true,
     "SM-A426N": true,
     "SM-A536N": true,
-    "SM-T515N": true
+    "SM-T515N": true,
+    "SM-S938N": true,
+    "SM-S936N": true,
+    "SM-S931N": true
   },
   "DBT": {
     "SM-T225": true,
@@ -553,7 +568,10 @@
     "SM-F926B": true,
     "SM-F936B": true,
     "SM-F946B": true,
-    "SM-F956B": true
+    "SM-F956B": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "TMB": {
     "SM-S901U": true,
@@ -616,7 +634,13 @@
     "SM-G920T": true,
     "SM-G925T": true,
     "SM-G900T": true,
-    "SGH-M919": true
+    "SGH-M919": true,
+    "SM-S938U": true,
+    "SM-S938U1": true,
+    "SM-S936U1": true,
+    "SM-S936U": true,
+    "SM-S931U1": true,
+    "SM-S931U": true
   },
   "TMK": {
     "SM-S901U": true,
@@ -670,7 +694,13 @@
     "SM-G950U1": true,
     "SM-G955U1": true,
     "SM-G930U": true,
-    "SM-G935U": true
+    "SM-G935U": true,
+    "SM-S938U": true,
+    "SM-S938U1": true,
+    "SM-S936U1": true,
+    "SM-S936U": true,
+    "SM-S931U1": true,
+    "SM-S931U": true
   },
   "ATT": {
     "SM-S901U1": true,
@@ -708,7 +738,13 @@
     "SM-G950U1": true,
     "SM-G955U1": true,
     "SM-G930U": true,
-    "SM-G935U": true
+    "SM-G935U": true,
+    "SM-S938U": true,
+    "SM-S938U1": true,
+    "SM-S936U1": true,
+    "SM-S936U": true,
+    "SM-S931U1": true,
+    "SM-S931U": true
   },
   "LUC": {
     "SM-S901N": true,
@@ -732,7 +768,10 @@
     "SM-A346N": true,
     "SM-A426N": true,
     "SM-A536N": true,
-    "SM-T515N": true
+    "SM-T515N": true,
+    "SM-S938N": true,
+    "SM-S936N": true,
+    "SM-S931N": true
   },
   "3IE": {
     "SM-F711B": true,
@@ -771,7 +810,10 @@
     "SM-A546E": true,
     "SM-A556E": true,
     "SM-A715F": true,
-    "SM-N970F": true
+    "SM-N970F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "TRG": {
     "SM-A202F": true,
@@ -830,7 +872,10 @@
     "SM-T805": true,
     "SM-T815": true,
     "SM-T819": true,
-    "SM-T825": true
+    "SM-T825": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "TCE": {
     "SM-S901E": true,
@@ -865,7 +910,10 @@
     "SM-T700": true,
     "SM-T725": true,
     "SM-T800": true,
-    "SM-T825": true
+    "SM-T825": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "DOR": {
     "SM-S901E": true,
@@ -886,7 +934,10 @@
     "SM-A546E": true,
     "SM-A556E": true,
     "SM-A715F": true,
-    "SM-N970F": true
+    "SM-N970F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "MOB": {
     "SM-S901B": true,
@@ -917,7 +968,10 @@
     "SM-A536B": true,
     "SM-A546B": true,
     "SM-A556B": true,
-    "SM-A715F": true
+    "SM-A715F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "TCL": {
     "SM-A125F": true,
@@ -1030,7 +1084,10 @@
     "SM-T870": true,
     "SM-T875": true,
     "SM-T970": true,
-    "SM-T975": true
+    "SM-T975": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "SER": {
     "SM-S901B": true,
@@ -1125,7 +1182,10 @@
     "SM-T870": true,
     "SM-T875": true,
     "SM-T970": true,
-    "SM-T975": true
+    "SM-T975": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "PCW": {
     "SM-N970F": true
@@ -1194,7 +1254,10 @@
     "SM-T835": true,
     "SM-T865": true,
     "SM-T875": true,
-    "SM-T975": true
+    "SM-T975": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "MBM": {
     "SM-F711B": true,
@@ -1360,7 +1423,10 @@
     "SM-T835": true,
     "SM-T865": true,
     "SM-T875": true,
-    "SM-T975": true
+    "SM-T975": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "XFA": {
     "SM-S901E": true,
@@ -1444,7 +1510,10 @@
     "SM-T865": true,
     "SM-T875": true,
     "SM-T970": true,
-    "SM-T975": true
+    "SM-T975": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "XFE": {
     "SM-S901E": true,
@@ -1506,7 +1575,10 @@
     "SM-T815": true,
     "SM-T835": true,
     "SM-T875": true,
-    "SM-T975": true
+    "SM-T975": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "MBC": {
     "SM-A125F": true,
@@ -1616,7 +1688,10 @@
     "SM-A546E": true,
     "SM-A556E": true,
     "SM-A715F": true,
-    "SM-N970F": true
+    "SM-N970F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "ARO": {
     "SM-S901E": true,
@@ -1669,7 +1744,10 @@
     "SM-T870": true,
     "SM-T875": true,
     "SM-T970": true,
-    "SM-T830": true
+    "SM-T830": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "CTI": {
     "SM-S901E": true,
@@ -1691,7 +1769,10 @@
     "SM-A536E": true,
     "SM-A556E": true,
     "SM-A715F": true,
-    "SM-N970F": true
+    "SM-N970F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "UFN": {
     "SM-S901E": true,
@@ -1712,7 +1793,10 @@
     "SM-A546E": true,
     "SM-A556E": true,
     "SM-A715F": true,
-    "SM-N970F": true
+    "SM-N970F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "PSN": {
     "SM-S901E": true,
@@ -1733,7 +1817,10 @@
     "SM-A546E": true,
     "SM-A556E": true,
     "SM-A715F": true,
-    "SM-N970F": true
+    "SM-N970F": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "OPP": {
     "SM-A125F": true,
@@ -1772,7 +1859,10 @@
     "SM-A515F": true,
     "SM-A536E": true,
     "SM-A546E": true,
-    "SM-A556E": true
+    "SM-A556E": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "VAU": {
     "SM-S901E": true,
@@ -1806,7 +1896,10 @@
     "SM-A536E": true,
     "SM-A556E": true,
     "SM-A736B": true,
-    "SM-T535": true
+    "SM-T535": true,
+    "SM-S938B": true,
+    "SM-S936B": true,
+    "SM-S931B": true
   },
   "XSA": {
     "SM-S901E": true,

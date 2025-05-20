@@ -1,130 +1,136 @@
 import os
 import sys
-import requests
+import json
+import hmac
+import hashlib
 import asyncio
 from datetime import datetime
-from telegram import Bot
-from telegram.constants import ParseMode
 from flask import Flask, request, jsonify
+from telegram import Bot, Update
+from telegram.constants import ParseMode
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Configuration
 BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 GITHUB_REPO = "jeykul/fwcheck2"
-WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')  # Optional for security
-PORT =  # Port for the webhook server
+WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET')  # Optional
+PORT = 51232
+SUBSCRIBERS_FILE = "subscribers.json"
 
-# Initialize Flask app
+# Flask app
 app = Flask(__name__)
 
-# Initialize Telegram bot
+# Telegram bot + application
 bot = Bot(token=BOT_TOKEN)
-
-# Global event loop
 loop = asyncio.new_event_loop()
+application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+# Subscribers (loaded/saved to file)
+def load_subscribers():
+    try:
+        with open(SUBSCRIBERS_FILE, 'r') as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+def save_subscribers(subs):
+    with open(SUBSCRIBERS_FILE, 'w') as f:
+        json.dump(list(subs), f)
+
+subscribers = load_subscribers()
 
 def log(message):
-    """Helper function for logging"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {message}", file=sys.stderr)
 
-async def send_telegram_message_async(changes):
-    """Send formatted message to Telegram (async)"""
-    if not changes:
-        return
-
-    # Telegram message length limit
-    MAX_MESSAGE_LENGTH = 4096
-
-    # Format message header
-    header = "📢 *New Firmware Updates Detected\!*\n\n"
-    footer = f"\n\n_Checked at {escape_markdown(datetime.now().strftime('%H:%M:%S'))}_"
-
-    # Split changes into chunks
-    message_chunks = []
-    current_chunk = header
-
-    for change, url in changes:
-        change_line = f"• [{escape_markdown(change)}]({escape_markdown(url)})\n"
-        
-        # If adding this line would exceed the limit, start a new chunk
-        if len(current_chunk) + len(change_line) + len(footer) > MAX_MESSAGE_LENGTH:
-            message_chunks.append(current_chunk + footer)
-            current_chunk = header + change_line
-        else:
-            current_chunk += change_line
-
-    # Add the last chunk
-    if current_chunk != header:
-        message_chunks.append(current_chunk + footer)
-
-    # Send all chunks
-    for chunk in message_chunks:
-        await bot.send_message(
-            chat_id=CHAT_ID,
-            text=chunk,
-            parse_mode=ParseMode.MARKDOWN_V2,
-            disable_web_page_preview=True
-        )
-
-    log(f"Sent {len(message_chunks)} messages with {len(changes)} changes")
-
-def send_telegram_message_sync(changes):
-    """Run the async Telegram message function in the global event loop"""
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(send_telegram_message_async(changes))
-
 def escape_markdown(text):
-    """Escape reserved MarkdownV2 characters"""
-    reserved_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    for char in reserved_chars:
+    reserved = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    for char in reserved:
         text = text.replace(char, f'\\{char}')
     return text
 
+async def send_telegram_message_async(changes):
+    if not changes:
+        return
+
+    MAX_LEN = 4096
+    header = "📢 *New Firmware Updates Detected\!*\n\n"
+    footer = f"\n\n_Checked at {escape_markdown(datetime.now().strftime('%H:%M:%S'))}_"
+    chunks = []
+    current = header
+
+    for change, url in changes:
+        line = f"• [{escape_markdown(change)}]({escape_markdown(url)})\n"
+        if len(current) + len(line) + len(footer) > MAX_LEN:
+            chunks.append(current + footer)
+            current = header + line
+        else:
+            current += line
+
+    if current != header:
+        chunks.append(current + footer)
+
+    for chat_id in subscribers:
+        for chunk in chunks:
+            await bot.send_message(
+                chat_id=chat_id,
+                text=chunk,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                disable_web_page_preview=True
+            )
+
+    log(f"Sent {len(chunks)} messages to {len(subscribers)} chats")
+
+def send_telegram_message_sync(changes):
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(send_telegram_message_async(changes))
+
+def verify_signature(payload, signature):
+    if not signature:
+        return False
+    sha_name, signature = signature.split('=')
+    if sha_name != 'sha256':
+        return False
+    mac = hmac.new(WEBHOOK_SECRET.encode(), msg=payload, digestmod=hashlib.sha256)
+    return hmac.compare_digest(mac.hexdigest(), signature)
+
 @app.route('/webhook', methods=['POST'])
 def github_webhook():
-    """Handle GitHub webhook events"""
     try:
         log("Received webhook request")
-        
-        # Verify payload (optional but recommended)
+
         if WEBHOOK_SECRET:
-            signature = request.headers.get('X-Hub-Signature-256', '')
-            if not verify_signature(request.data, signature):
+            sig = request.headers.get('X-Hub-Signature-256', '')
+            if not verify_signature(request.data, sig):
                 log("Invalid signature")
                 return jsonify({"status": "error", "message": "Invalid signature"}), 403
 
-        # Parse JSON payload
         payload = request.json
         if not payload:
             log("Empty payload")
             return jsonify({"status": "error", "message": "Empty payload"}), 400
 
-        # Check if it's a push to the main branch
         if payload.get("ref") != "refs/heads/main":
             log("Ignoring non-main branch push")
             return jsonify({"status": "ignored", "message": "Not a main branch push"}), 200
 
-        # Process commits
         commits = payload.get("commits", [])
         if not commits:
             log("No commits found")
             return jsonify({"status": "ignored", "message": "No commits found"}), 200
 
         log(f"Processing {len(commits)} new commits")
-
-        # Extract changes
         changes = []
-        for commit in commits:
-            commit_message = commit.get("message", "")
-            commit_url = commit.get("url", "")
-            changes.extend([
-                (line, commit_url) 
-                for line in commit_message.split('\n') 
-                if any(x in line for x in ['created', 'updated'])
-            ])
 
-        # Send updates to Telegram
+        for commit in commits:
+            message = commit.get("message", "")
+            url = commit.get("url", "")
+            changes += [
+                (line, url)
+                for line in message.split('\n')
+                if any(x in line.lower() for x in ['created', 'updated'])
+            ]
+
         if changes:
             log(f"Sending {len(changes)} changes to Telegram")
             send_telegram_message_sync(changes)
@@ -136,31 +142,35 @@ def github_webhook():
         log(f"Error processing webhook: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-def verify_signature(payload, signature):
-    """Verify GitHub webhook signature (optional)"""
-    import hmac
-    import hashlib
-    if not signature:
-        return False
-    sha_name, signature = signature.split('=')
-    if sha_name != 'sha256':
-        return False
-    mac = hmac.new(WEBHOOK_SECRET.encode(), msg=payload, digestmod=hashlib.sha256)
-    return hmac.compare_digest(mac.hexdigest(), signature)
+# /here command handler
+async def here_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    if chat_id not in subscribers:
+        subscribers.add(chat_id)
+        save_subscribers(subscribers)
+        await update.message.reply_text("✅ This chat is now subscribed to firmware updates.")
+        log(f"Subscribed chat: {chat_id}")
+    else:
+        await update.message.reply_text("ℹ️ This chat is already subscribed.")
 
-def start_webhook_server():
-    """Start the Flask webhook server"""
+# Register /here
+application.add_handler(CommandHandler("here", here_handler))
+
+def start_flask():
     log(f"Starting webhook server on port {PORT}...")
-    app.run(host='0.0.0.0', port=PORT)
+    app.run(host="0.0.0.0", port=PORT)
 
 if __name__ == "__main__":
-    if not BOT_TOKEN or not CHAT_ID:
-        log("Error: Missing environment variables")
+    if not BOT_TOKEN:
+        log("Error: TELEGRAM_BOT_TOKEN not set.")
         sys.exit(1)
 
-    # Set up the global event loop
-    asyncio.set_event_loop(loop)
+    # Start Telegram polling in background
+    import threading
+    threading.Thread(target=lambda: application.run_polling(), daemon=True).start()
+
+    # Start webhook server
     try:
-        start_webhook_server()
+        start_flask()
     finally:
         loop.close()

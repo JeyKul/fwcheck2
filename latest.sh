@@ -73,12 +73,13 @@ start_time=$(date +%s)
 
 # Generate CSC-model pairs from JSON
 csp_model_list=$(mktemp)
-for csc in $(jq -r 'keys[]' "$json_file"); do
-    models=$(jq -r ".\"$csc\" | keys[]" "$json_file")
+for csc in $(jq -r '.CSC | keys[]' "$json_file"); do
+    models=$(jq -r ".CSC[\"$csc\"] | keys[]" "$json_file")
     for model in $models; do
         echo "$csc $model"
     done
 done > "$csp_model_list"
+
 
 # Run processing in parallel
 parallel_args=()

@@ -54,8 +54,8 @@ async def send_telegram_message_async(changes):
         return
 
     MAX_LEN = 4096
-    header = "📢 *New Firmware Updates Detected\!*\n\n"
-    footer = f"\n\n_Checked at {escape_markdown(datetime.now().strftime('%H:%M:%S'))}_"
+    header = "📢 *WE GOT UPDATES\!*\n\n"
+    footer = f"\n\n_Last checked at {escape_markdown(datetime.now().strftime('%H:%M:%S'))}_"
     chunks = []
     current = header
 

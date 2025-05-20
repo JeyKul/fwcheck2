@@ -26,47 +26,42 @@ cmd_file=$(mktemp)
 process_model() {
     local csc=$1
     local model=$2
+    local url="http://fota-cloud-dn.ospserver.net/firmware/$csc/$model/version.xml"
 
-    # Fetch XML content
-    xml_response=$(curl --retry 5 --retry-delay 5 -s "http://fota-cloud-dn.ospserver.net/firmware/$csc/$model/version.xml")
-    xml_line=$(echo "$xml_response" | grep -m 1 '<latest')
+    xml_response=$(curl --retry 5 --retry-delay 5 -s "$url")
+    latest_version=$(echo "$xml_response" | xmllint --xpath 'string(//version/latest)' - 2>/dev/null)
+    android_version=$(echo "$xml_response" | xmllint --xpath 'string(//version/latest/@o)' - 2>/dev/null)
 
-    # Extract latest version and Android version, sanitize spaces
-    latest_version=$(echo "$xml_line" | sed -e 's/<latest[^>]*>//' -e 's/<\/latest>//' | tr -s '[:space:]' ' ' | sed 's/^ *//;s/ *$//')
-    android_version=$(echo "$xml_line" | sed -n 's/.* o="\([^"]*\)".*/\1/p')
-
-    # Check if we got a valid response
-    if [ -z "$latest_version" ]; then
-        echo "log:Firmware: $model CSC:$csc not found"
+    # Validate format: should be like X/Y/Z
+    if [[ ! "$latest_version" =~ [A-Z0-9]+\/[A-Z0-9]+\/[A-Z0-9]+ ]]; then
+        echo "log:Firmware: $model CSC:$csc has invalid or missing latest version"
         return
     fi
 
-    # Determine action based on current version
-    if [ -f "current.$csc.$model" ]; then
-        current_version=$(head -n1 "current.$csc.$model")
-        if [ "$current_version" != "$latest_version" ]; then
-            # Write latest version and Android version if present
-            echo "$latest_version" > "current.$csc.$model"
-            if [ -n "$android_version" ]; then
-                echo "ANDROID_VERSION=$android_version" >> "current.$csc.$model"
-            fi
-            echo "add:current.$csc.$model"
+    file="current.$csc.$model"
+    tmp_file=$(mktemp)
+
+    echo "$latest_version" > "$tmp_file"
+    [ -n "$android_version" ] && echo "ANDROID_VERSION=$android_version" >> "$tmp_file"
+
+    if [ -f "$file" ]; then
+        if ! cmp -s "$file" "$tmp_file"; then
+            mv "$tmp_file" "$file"
+            echo "add:$file"
             commit_msg="$csc/$model: updated to $latest_version"
             [ -n "$android_version" ] && commit_msg+=" (Android $android_version)"
-            commit_msg=$(echo "$commit_msg" | tr -s '[:space:]' ' ' | sed 's/^ *//;s/ *$//')
-            echo "commit:$commit_msg"
+            echo "commit:$(echo "$commit_msg" | xargs)"
             echo "log:Firmware: $model CSC:$csc updated to $latest_version"
+        else
+            rm "$tmp_file"
+            echo "log:Firmware: $model CSC:$csc is already up-to-date"
         fi
     else
-        echo "$latest_version" > "current.$csc.$model"
-        if [ -n "$android_version" ]; then
-            echo "ANDROID_VERSION=$android_version" >> "current.$csc.$model"
-        fi
-        echo "add:current.$csc.$model"
+        mv "$tmp_file" "$file"
+        echo "add:$file"
         commit_msg="$csc/$model: created with $latest_version"
         [ -n "$android_version" ] && commit_msg+=" (Android $android_version)"
-        commit_msg=$(echo "$commit_msg" | tr -s '[:space:]' ' ' | sed 's/^ *//;s/ *$//')
-        echo "commit:$commit_msg"
+        echo "commit:$(echo "$commit_msg" | xargs)"
         echo "log:Firmware: $model CSC:$csc created with version $latest_version"
     fi
 }
@@ -91,7 +86,7 @@ parallel_args=()
 
 cat "$csp_model_list" | parallel "${parallel_args[@]}" --colsep ' ' process_model {1} {2} > "$cmd_file"
 
-# Handle commands
+# Handle output commands
 while read -r line; do
     case $line in
         add:*)

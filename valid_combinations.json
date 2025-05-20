@@ -118,6 +118,7 @@
     "SM-G935U": true
   },
   "DSA": {
+    "SM-A366U": true,
     "SM-S901U": true,
     "SM-S901U1": true,
     "SM-S906U": true,
@@ -297,6 +298,7 @@
     "SM-S931B": true
   },
   "TUR": {
+    "SM-M325FV": true,
     "SM-X200": true,
     "SM-X800": true,
     "SM-X900": true,
@@ -423,6 +425,7 @@
     "SM-S931N": true
   },
   "DBT": {
+    "SM-M325FV": true,
     "SM-R860": true,
     "SM-T225": true,
     "SM-T230": true,
@@ -512,6 +515,7 @@
     "SM-F936B": true
   },
   "EUX": {
+    "SM-X516B": true,
     "SM-A165F": true,
     "SM-S711B": true,
     "SM-S721B": true,
@@ -999,6 +1003,8 @@
     "SM-T819": true
   },
   "XME": {
+    "SM-X516B": true,
+    "SM-M325FV": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -1092,6 +1098,7 @@
     "SM-S931B": true
   },
   "SER": {
+    "SM-M325FV": true,
     "SM-S901B": true,
     "SM-S906B": true,
     "SM-S908B": true,
@@ -1193,6 +1200,7 @@
     "SM-N970F": true
   },
   "XFV": {
+    "SM-X516B": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -1339,6 +1347,7 @@
     "SM-T805": true
   },
   "SEK": {
+    "SM-M325FV": true,
     "SM-S901B": true,
     "SM-S906B": true,
     "SM-S908B": true,
@@ -1431,6 +1440,7 @@
     "SM-S931B": true
   },
   "XFA": {
+    "SM-X516B": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -1696,6 +1706,9 @@
     "SM-S931B": true
   },
   "ARO": {
+    "SM-X516B": true,
+    "SM-A116M": true,
+    "SM-G556B": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -1904,6 +1917,7 @@
     "SM-S931B": true
   },
   "XSA": {
+    "SM-X516B": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -1984,6 +1998,7 @@
     "SM-T975": true
   },
   "TEL": {
+    "SM-X516B": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -2038,6 +2053,7 @@
     "SM-N970F": true
   },
   "ATO": {
+    "SM-M325FV": true,
     "SM-F916B": true,
     "SM-A125F": true,
     "SM-A127F": true,
@@ -2152,6 +2168,8 @@
     "SM-N970F": true
   },
   "ZTO": {
+    "SM-M325FV": true,
+    "SM-X516B": true,
     "SM-S901E": true,
     "SM-S908E": true,
     "SM-S906E": true,
@@ -2608,6 +2626,8 @@
     "SM-N970F": true
   },
   "EGY": {
+    "SM-M325FV": true,
+    "SM-X516B": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -2794,6 +2814,7 @@
     "SM-N970F": true
   },
   "XEF": {
+    "SM-M325FV": true,
     "SM-F741B": true,
     "SM-F900F": true,
     "SM-F916B": true,
@@ -3188,6 +3209,8 @@
     "SM-T970": true
   },
   "INS": {
+    "SM-X516B": true,
+    "SM-G556B": true,
     "SM-S906E": true,
     "SM-S908E": true,
     "SM-S911B": true,
@@ -3294,6 +3317,7 @@
     "SM-T555": true
   },
   "ITV": {
+    "SM-M325FV": true,
     "SM-F900F": true,
     "SM-F916B": true,
     "SM-A125F": true,
@@ -3592,6 +3616,7 @@
     "SM-T515": true
   },
   "FWD": {
+    "SM-M325FV": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,
@@ -3647,6 +3672,8 @@
     "SM-N970F": true
   },
   "MWD": {
+    "SM-M325FV": true,
+    "SM-X516B": true,
     "SM-S901E": true,
     "SM-S906E": true,
     "SM-S908E": true,

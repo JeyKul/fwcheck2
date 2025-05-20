@@ -423,6 +423,7 @@
     "SM-S931N": true
   },
   "DBT": {
+    "SM-R860": true,
     "SM-T225": true,
     "SM-T230": true,
     "SM-T235": true,
@@ -511,6 +512,7 @@
     "SM-F936B": true
   },
   "EUX": {
+    "SM-A165F": true,
     "SM-S711B": true,
     "SM-S721B": true,
     "SM-S901B": true,

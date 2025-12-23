@@ -1,31 +1,29 @@
- #!/usr/bin/env python3
-
+#!/usr/bin/env python3
 import argparse
 import asyncio
 import json
 import time
-import os
-import requests
 import httpx
+import xml.etree.ElementTree as ET
 import tempfile
 import filecmp
 import subprocess
-import xml.etree.ElementTree as ET
+import requests
+import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
 
-# ================= CONFIG =================
-
+# === CONFIG ===
 ORIGINAL_JSON = "valid_combinations.json"
-UPDATED_JSON  = "valid_combinations_updated.json"
-
+UPDATED_JSON = "valid_combinations_updated.json"
 BASE_URL = "http://fota-cloud-dn.ospserver.net/firmware"
 LOG_FILE = Path.home() / "fw_python.log"
 
-MAX_NET_CONCURRENCY = 20
-MAX_CPU_THREADS = 8
-PUSH_AFTER = True
+MAX_NET_CONCURRENCY = 20     # concurrent HTTP requests
+MAX_CPU_THREADS = 8          # threads for file + git work
+REUSE_HTTP_CLIENT = True     # reuse one HTTP client
+PUSH_AFTER = True            # push after all commits
 
 # SamFW tuning
 SAMFW_BASE_URL = "https://samfrew.com/firmware/upload/Desc/{offset}/1000"
@@ -37,26 +35,10 @@ SAMFW_HEADERS = {
     "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
 }
-
-# ==========================================
-
-
-# ---------- UTILS ----------
-
-def load_json(path):
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {"CSC": {}}
+# ===============
 
 
-def save_json(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-
-
-# ---------- SAMFW SCRAPER (FAST, SAFE) ----------
-
+# ---------- SAMFW SCRAPER ----------
 def fetch_model_region(session, offset):
     url = SAMFW_BASE_URL.format(offset=offset)
     r = session.get(url, timeout=20)
@@ -97,7 +79,13 @@ def fetch_model_region(session, offset):
 def update_csc_file():
     print("[CSC] Updating CSC/model list (fast mode)")
 
-    base = load_json(ORIGINAL_JSON)
+    # Load original data
+    if os.path.exists(ORIGINAL_JSON):
+        with open(ORIGINAL_JSON, "r", encoding="utf-8") as f:
+            base = json.load(f)
+    else:
+        base = {"CSC": {}}
+    
     updated = json.loads(json.dumps(base))  # deep copy
 
     session = requests.Session()
@@ -134,103 +122,142 @@ def update_csc_file():
 
             time.sleep(SAMFW_SLEEP)
 
-    save_json(UPDATED_JSON, updated)
+    # Save updated JSON
+    with open(UPDATED_JSON, "w", encoding="utf-8") as f:
+        json.dump(updated, f, indent=2)
     print(f"[CSC] Done → {UPDATED_JSON}")
+    return UPDATED_JSON
 
 
-# ---------- ASYNC FIRMWARE PIPELINE ----------
-
+# ---------- FIRMWARE CHECKER ----------
 async def fetch_xml(client, csc, model, sem):
+    """Fetch version.xml content."""
     url = f"{BASE_URL}/{csc}/{model}/version.xml"
     async with sem:
+        start = time.perf_counter()
         try:
-            r = await client.get(url, timeout=20)
-            if r.status_code == 200:
-                return csc, model, r.text, None
-            return csc, model, None, f"HTTP {r.status_code}"
+            resp = await client.get(url, timeout=20)
+            elapsed = time.perf_counter() - start
+            if resp.status_code == 200:
+                return csc, model, resp.text, elapsed, None
+            return csc, model, None, elapsed, f"HTTP {resp.status_code}"
         except Exception as e:
-            return csc, model, None, str(e)
+            return csc, model, None, 0, f"Fetch error: {e}"
 
 
-def process_xml(csc, model, xml):
-    out = []
-    path = Path(f"current.{csc}.{model}")
-    tmp = Path(tempfile.mktemp())
+def process_xml(csc, model, xml_data):
+    """Parse XML, compare file, commit if changed."""
+    file_path = Path(f"current.{csc}.{model}")
+
+    # Create temp file in the same directory as the target, not /tmp/
+    tmp_path = file_path.parent / f".tmp_{csc}_{model}"
+    log_lines = []
+
+    if not xml_data:
+        log_lines.append(f"Firmware: {model} CSC:{csc} failed (empty data)")
+        return log_lines
 
     try:
-        root = ET.fromstring(xml)
+        root = ET.fromstring(xml_data)
+        latest = root.findtext(".//latest")
         node = root.find(".//latest")
-        latest = node.text if node is not None else None
         android = node.attrib.get("o") if node is not None else None
     except Exception as e:
-        return [f"{csc}/{model} XML error: {e}"]
+        log_lines.append(f"Firmware: {model} CSC:{csc} XML parse error: {e}")
+        return log_lines
 
     if not latest or "/" not in latest:
-        return [f"{csc}/{model} invalid data"]
+        log_lines.append(f"Firmware: {model} CSC:{csc} invalid latest format: {latest}")
+        return log_lines
 
-    with open(tmp, "w") as f:
-        f.write(latest + "\n")
+    # Write new content
+    with open(tmp_path, "w") as f:
+        f.write(f"{latest}\n")
         if android:
             f.write(f"ANDROID_VERSION={android}\n")
 
-    changed = not path.exists() or not filecmp.cmp(path, tmp, shallow=False)
+    # Compare existing vs new
+    changed = True
+    if file_path.exists() and filecmp.cmp(file_path, tmp_path, shallow=False):
+        tmp_path.unlink(missing_ok=True)
+        changed = False
 
     if changed:
-        tmp.replace(path)
-        msg = f"{csc}/{model}: {latest}"
-        if android:
-            msg += f" (Android {android})"
-        subprocess.run(["git", "add", str(path)], check=False)
-        subprocess.run(["git", "commit", "-m", msg], check=False)
-        out.append(f"{csc}/{model} updated")
-    else:
-        tmp.unlink(missing_ok=True)
-        out.append(f"{csc}/{model} unchanged")
+        # Move safely (works across filesystems)
+        try:
+            tmp_path.replace(file_path)
+        except OSError:
+            from shutil import move
+            move(str(tmp_path), str(file_path))
 
-    return out
+        commit_msg = f"{csc}/{model}: {latest}"
+        if android:
+            commit_msg += f" (Android {android})"
+        subprocess.run(["git", "add", str(file_path)], check=False)
+        subprocess.run(["git", "commit", "-m", commit_msg], check=False)
+        log_lines.append(f"Firmware: {model} CSC:{csc} updated to {latest}")
+    else:
+        log_lines.append(f"Firmware: {model} CSC:{csc} is already up-to-date")
+
+    return log_lines
 
 
 async def process_all(json_file):
+    """Main task: fetch in async, process in threads."""
     with open(json_file) as f:
         data = json.load(f)
 
     pairs = [
         (csc, model)
         for csc, models in data.get("CSC", {}).items()
-        for model in models
+        for model in models.keys()
     ]
 
     sem = asyncio.Semaphore(MAX_NET_CONCURRENCY)
     loop = asyncio.get_running_loop()
-    pool = ThreadPoolExecutor(MAX_CPU_THREADS)
-    logs = []
+    executor = ThreadPoolExecutor(max_workers=MAX_CPU_THREADS)
+    all_logs = []
 
-    async with httpx.AsyncClient(http2=True) as client:
+    async def runner(client):
         tasks = [fetch_xml(client, c, m, sem) for c, m in pairs]
         for coro in asyncio.as_completed(tasks):
-            csc, model, xml, err = await coro
+            csc, model, xml, elapsed, err = await coro
             if err:
-                logs.append(f"{csc}/{model} failed ({err})")
+                line = f"Firmware: {model} CSC:{csc} failed ({err})"
+                print(f"log:{line}")
+                all_logs.append(line)
                 continue
-            res = await loop.run_in_executor(pool, process_xml, csc, model, xml)
-            logs.extend(res)
+            # Send processing to thread pool
+            logs = await loop.run_in_executor(executor, process_xml, csc, model, xml)
+            for line in logs:
+                print(f"log:{line}")
+                all_logs.append(line)
+            await asyncio.sleep(0.01)  # yield for fairness
 
-    pool.shutdown(wait=True)
-    return logs
+    if REUSE_HTTP_CLIENT:
+        async with httpx.AsyncClient(http2=True) as client:
+            await runner(client)
+    else:
+        async with httpx.AsyncClient(http2=True) as client:
+            await runner(client)
 
+    executor.shutdown(wait=True)
+    return all_logs
 
-# ---------- ENTRY POINT ----------
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--update", action="store_true", help="Update CSC list first")
+    parser.add_argument("--update", action="store_true", 
+                       help="Update CSC list from SamFW first")
     args = parser.parse_args()
 
     json_file = ORIGINAL_JSON
 
     if args.update:
-        update_csc_file()
-        json_file = UPDATED_JSON
+        print("Updating CSC/model list from SamFW...")
+        json_file = update_csc_file()
+    else:
+        print(f"Using existing JSON file: {json_file}")
 
     start = time.time()
     logs = asyncio.run(process_all(json_file))
@@ -238,16 +265,16 @@ def main():
 
     with open(LOG_FILE, "a") as f:
         f.write(f"\nRun {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-        for l in logs:
-            f.write(l + "\n")
-        f.write(f"Finished in {duration:.2f}s\n")
+        for line in logs:
+            f.write(line + "\n")
+        f.write(f"Finished in {duration:.2f} seconds\n")
 
     if PUSH_AFTER:
+        print("Pushing changes to GitHub...")
         subprocess.run(["git", "push"], check=False)
 
-    print(f"Finished in {duration:.2f}s using {json_file}")
+    print(f"Finished in {duration:.2f}s, log: {LOG_FILE}")
 
 
 if __name__ == "__main__":
     main()
-

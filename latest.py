@@ -133,17 +133,20 @@ def update_csc_file():
 async def fetch_xml(client, csc, model, sem):
     """Fetch version.xml content."""
     url = f"{BASE_URL}/{csc}/{model}/version.xml"
+    headers = {
+        "User-Agent": f"samsung {model} SyncML DM Client",
+    }
+
     async with sem:
         start = time.perf_counter()
         try:
-            resp = await client.get(url, timeout=20)
+            resp = await client.get(url, headers=headers, timeout=20)
             elapsed = time.perf_counter() - start
             if resp.status_code == 200:
                 return csc, model, resp.text, elapsed, None
             return csc, model, None, elapsed, f"HTTP {resp.status_code}"
         except Exception as e:
             return csc, model, None, 0, f"Fetch error: {e}"
-
 
 def process_xml(csc, model, xml_data):
     """Parse XML, compare file, commit if changed."""
